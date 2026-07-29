@@ -237,10 +237,22 @@ function readSteamDesktopDocument(): Document | null {
 function findCompatibleActionHosts(document: Document): Element[] {
   const hosts = new Set<Element>();
   for (const settingsIcon of document.querySelectorAll(SETTINGS_CONTROL_SELECTOR)) {
+    if (!isHitTestReachable(settingsIcon, document)) continue;
     const host = findActionHostForSettingsControl(settingsIcon);
     if (host) hosts.add(host);
   }
   return [...hosts];
+}
+
+function isHitTestReachable(element: Element, document: Document): boolean {
+  if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+
+  const bounds = element.getBoundingClientRect();
+  if (bounds.width <= 0 || bounds.height <= 0) return false;
+
+  return document
+    .elementsFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2)
+    .some((hitElement) => hitElement === element || element.contains(hitElement));
 }
 
 function findActionHostForSettingsControl(settingsIcon: Element): Element | null {

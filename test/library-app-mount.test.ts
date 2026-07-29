@@ -7,10 +7,14 @@ import {
 } from "steam-bridge/library-app-mount";
 
 type FakeElement = {
+  active: boolean;
   parentElement: FakeElement | null;
   children: FakeElement[];
   isConnected: boolean;
+  checkVisibility: () => boolean;
   closest: (selector: string) => FakeElement | null;
+  contains: (element: FakeElement) => boolean;
+  getBoundingClientRect: () => Pick<DOMRect, "height" | "left" | "top" | "width">;
   matches: (selector: string) => boolean;
   querySelector: (selector: string) => FakeElement | null;
   appendChild: (element: FakeElement) => FakeElement;
@@ -20,6 +24,8 @@ type FakeElement = {
 type FakeDocument = {
   documentElement: FakeElement;
   mountedElements: FakeElement[];
+  settingsIcons: FakeElement[];
+  elementsFromPoint: () => FakeElement[];
   querySelectorAll: (selector: string) => FakeElement[];
   replaceCompatibleHosts: (count: number) => void;
 };
@@ -94,6 +100,29 @@ test("mounts one custom element in every compatible host and ignores lookalikes"
     { appId: 570, displayName: "Dota 2" },
     { appId: 570, displayName: "Dota 2" },
   ]);
+
+  lifecycle.stop();
+});
+
+test("mounts only active compatible hosts and follows Steam branch transitions", () => {
+  const environment = installFakeSteamEnvironment({ compatibleHostCount: 2 });
+  environment.document.settingsIcons[1].active = false;
+
+  const lifecycle = startLibraryAppMountLifecycle({
+    consumerId: "test-consumer",
+    createElement: () => createFakeElement() as unknown as HTMLElement,
+  });
+
+  assert.equal(environment.document.mountedElements.length, 1);
+  const firstElement = environment.document.mountedElements[0];
+
+  environment.document.settingsIcons[0].active = false;
+  environment.document.settingsIcons[1].active = true;
+  environment.tick();
+
+  assert.equal(firstElement.isConnected, false);
+  assert.equal(environment.document.mountedElements.length, 1);
+  assert.notEqual(environment.document.mountedElements[0], firstElement);
 
   lifecycle.stop();
 });
@@ -293,6 +322,9 @@ function createFakeDocument(
     documentElement: createFakeElement(),
     mountedElements: [] as FakeElement[],
     settingsIcons: [] as FakeElement[],
+    elementsFromPoint() {
+      return this.settingsIcons.filter((element) => element.active);
+    },
     querySelectorAll(selector: string) {
       if (selector === "svg.SVGIcon_Settings") return this.settingsIcons;
       return [];
@@ -350,10 +382,18 @@ function createSettingsIcon(
 
 function createFakeElement(): FakeElement {
   return {
+    active: true,
     parentElement: null,
     children: [],
     isConnected: false,
+    checkVisibility() {
+      return this.active;
+    },
     closest: () => null,
+    contains(element) {
+      return element === this || this.children.some((child) => child.contains(element));
+    },
+    getBoundingClientRect: () => ({ height: 10, left: 0, top: 0, width: 10 }),
     matches: () => true,
     querySelector: () => null,
     appendChild(element) {
