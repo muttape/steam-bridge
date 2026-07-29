@@ -1,0 +1,18 @@
+[
+  {
+    "description": "",
+    "id": "steam-main-window",
+    "title": "Steam",
+    "type": "page",
+    "url": "about:blank?browserType=4&useragent=Valve%20Steam%20Client",
+    "webSocketDebuggerUrl": "ws://127.0.0.1:8080/devtools/page/steam-main-window"
+  },
+  {
+    "description": "",
+    "id": "shared-js-context",
+    "title": "SharedJSContext",
+    "type": "page",
+    "url": "https://steamloopback.host/index.html?LANGUAGE=english&COUNTRY=IT&IN_CLIENT=true&IN_STEAMUI_SHARED_CONTEXT=true&PLATFORM=windows&ARCH=x64",
+    "webSocketDebuggerUrl": "ws://127.0.0.1:8080/devtools/page/shared-js-context"
+  }
+]

@@ -1,0 +1,57 @@
+{
+  "name": "steam-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist/src",
+    "README.md",
+    "docs"
+  ],
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    },
+    "./library-app-mount": {
+      "types": "./dist/src/library-app-mount.d.ts",
+      "import": "./dist/src/library-app-mount.js"
+    },
+    "./transport-client": {
+      "types": "./dist/src/transport-client.d.ts",
+      "import": "./dist/src/transport-client.js"
+    }
+  },
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "volta": {
+    "node": "24.18.0"
+  },
+  "scripts": {
+    "format": "prettier --write . --log-level error",
+    "format:check": "prettier --check .",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
+    "steam-cef": "node dist/scripts/steam-cef.js",
+    "smoke:steam": "npm run build && node dist/scripts/smoke-steam.js",
+    "prepare": "npm run build",
+    "start": "npm run build",
+    "test": "npm run build && node --test \"dist/test/*.test.js\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/ws": "^8.18.1",
+    "esbuild": "^0.28.1",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
+  }
+}
