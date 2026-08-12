@@ -52,6 +52,6 @@
     "typescript": "^6.0.3"
   },
   "allowScripts": {
-    "esbuild@0.28.1": true
+    "esbuild": true
   }
 }
