@@ -5,7 +5,7 @@
     "requireBranch": "main",
     "commitMessage": "chore(release): v${version}",
     "tagName": "v${version}",
-    "tagAnnotation": "Release v${version}"
+    "tagAnnotation": "Steam Bridge v${version}"
   },
 
   "npm": {
@@ -13,6 +13,7 @@
   },
 
   "github": {
-    "release": true
+    "release": true,
+    "host": "github.com"
   }
 }
