@@ -39,7 +39,8 @@
     "prepare": "npm run build",
     "start": "npm run build",
     "test": "npm run build && node --test \"dist/test/*.test.js\"",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "release": "release-it"
   },
   "dependencies": {
     "ws": "^8.21.0"
@@ -49,6 +50,7 @@
     "@types/ws": "^8.18.1",
     "esbuild": "^0.28.1",
     "prettier": "^3.9.6",
+    "release-it": "^21.0.2",
     "typescript": "^6.0.3"
   },
   "allowScripts": {

@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/release-it/schema/release-it.json",
+
+  "git": {
+    "requireBranch": "main",
+    "commitMessage": "chore(release): v${version}",
+    "tagName": "v${version}",
+    "tagAnnotation": "Release v${version}"
+  },
+
+  "npm": {
+    "publish": false
+  },
+
+  "github": {
+    "release": true
+  }
+}
