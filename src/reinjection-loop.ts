@@ -157,7 +157,10 @@ export async function watchReinjectionLoop(
     const result = await runReinjectionTick(deps, state, options);
     state = result.state;
     options.onTick?.(result);
-    await delay(Math.max(pollIntervalMs, state.nextAttemptAtMs - Date.now()), signal);
+    await delay(
+      result.action === "wait" ? Math.max(0, state.nextAttemptAtMs - Date.now()) : pollIntervalMs,
+      signal,
+    );
   }
 }
 

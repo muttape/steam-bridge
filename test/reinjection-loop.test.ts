@@ -269,6 +269,37 @@ test("watch loop cleans up abort listeners after timeout", async () => {
   assert.equal(signal.adds, signal.removes);
 });
 
+test("watch loop uses reinjection backoff while waiting for Steam", async () => {
+  const controller = new AbortController();
+  const startedAt = Date.now();
+  let probes = 0;
+  let injectedAt = Number.POSITIVE_INFINITY;
+  const loopOptions = options({ baseDelayMs: 1 });
+  delete loopOptions.nowMs;
+
+  await watchReinjectionLoop(
+    {
+      ...deps({ targets: [targetA] }),
+      async probeTargets() {
+        probes += 1;
+        return probes === 1 ? [] : [targetA];
+      },
+    },
+    {
+      ...loopOptions,
+      pollIntervalMs: 500,
+      onTick(result) {
+        if (result.action !== "inject") return;
+        injectedAt = Date.now();
+        controller.abort();
+      },
+    },
+    controller.signal,
+  );
+
+  assert.ok(injectedAt - startedAt < 250, "waiting retry must not use the stable poll interval");
+});
+
 function deps(config: {
   targets: CdpTarget[];
   diagnostics?: Record<string, unknown>;
