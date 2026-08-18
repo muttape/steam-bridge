@@ -93,16 +93,6 @@ export function stringifyTransportMessage(message: TransportMessage): string {
   return JSON.stringify(message);
 }
 
-export function transportProtocolModuleSource(): string {
-  return `export const TRANSPORT_VERSION = ${TRANSPORT_VERSION};
-export ${makeTransportError.toString()}
-export ${parseTransportMessage.toString()}
-export ${stringifyTransportMessage.toString()}
-${isRecord.toString()}
-${isTransportErrorCode.toString()}
-`;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }

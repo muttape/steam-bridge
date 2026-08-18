@@ -22,7 +22,6 @@ try {
 
   server = await boundary("start loopback transport", () =>
     startTransportServer({
-      port: 0,
       routes: new Map([["system.ping", () => "pong"]]),
       onRequest(request, response) {
         if (new URL(request.url ?? "/", "http://127.0.0.1").pathname !== "/entry.js") return false;

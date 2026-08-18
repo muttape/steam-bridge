@@ -1,7 +1,6 @@
 import type { CdpTarget } from "./cdp.js";
 import { evaluateJavascript, probeCdp, type EvaluationResult } from "./cdp.js";
 import { buildRuntimeDiagnosticsRead, buildRuntimeInjection } from "./injection.js";
-import { transitionReinjection, type ReinjectionState } from "./reinjection.js";
 import { selectSharedContextTarget } from "./target-selector.js";
 
 export type RuntimeDiagnostics = {
@@ -12,7 +11,7 @@ export type RuntimeDiagnostics = {
 };
 
 export type ReinjectionLoopState = {
-  reinjection: ReinjectionState;
+  failedAttempts: number;
   selectedTargetId?: string;
   nextAttemptAtMs: number;
 };
@@ -39,7 +38,7 @@ export type ReinjectionLoopDeps = {
 
 export function initialReinjectionLoopState(): ReinjectionLoopState {
   return {
-    reinjection: { attempts: 0, nextDelayMs: 1000, status: "idle" },
+    failedAttempts: 0,
     nextAttemptAtMs: 0,
   };
 }
@@ -58,11 +57,11 @@ export async function runReinjectionTick(
   try {
     target = selectSharedContextTarget(await deps.probeTargets())?.target;
   } catch {
-    return waitAfter(state, "target-missing", "cdp-unavailable", nowMs, options);
+    return waitAfter(state, "cdp-unavailable", nowMs, options, undefined);
   }
 
   if (!target?.webSocketDebuggerUrl) {
-    return waitAfter(state, "target-missing", "target-missing", nowMs, options);
+    return waitAfter(state, "target-missing", nowMs, options, undefined);
   }
 
   const targetChanged =
@@ -78,7 +77,7 @@ export async function runReinjectionTick(
       if (targetFound) {
         reason = "target-found";
       } else {
-        return waitAfter(state, "detached", "diagnostics-failed", nowMs, options);
+        return waitAfter(state, "diagnostics-failed", nowMs, options, undefined);
       }
     }
     if (!reason) {
@@ -102,14 +101,14 @@ export async function runReinjectionTick(
       buildRuntimeInjection({ entrypointUrl: options.entrypointUrl, version: options.version }),
     );
   } catch {
-    return waitAfter(state, "injection-failed", "injection-failed", nowMs, options);
+    return waitAfter(state, "injection-failed", nowMs, options, state.selectedTargetId);
   }
 
   return {
     action: "inject",
     reason,
     state: {
-      reinjection: transitionReinjection(state.reinjection, "injected", options),
+      failedAttempts: 0,
       selectedTargetId: target.id,
       nextAttemptAtMs: nowMs,
     },
@@ -178,20 +177,24 @@ function reinjectionReason(
 
 function waitAfter(
   state: ReinjectionLoopState,
-  event: Parameters<typeof transitionReinjection>[1],
   reason: string,
   nowMs: number,
   options: ReinjectionLoopOptions,
+  selectedTargetId: string | undefined,
 ): ReinjectionTickResult {
-  const reinjection = transitionReinjection(state.reinjection, event, options);
+  const failedAttempts = state.failedAttempts + 1;
+  const baseDelayMs = options.baseDelayMs ?? 1000;
+  const nextDelayMs = Math.min(
+    options.maxDelayMs ?? 30_000,
+    baseDelayMs * 2 ** Math.max(0, failedAttempts - 1),
+  );
   return {
     action: "wait",
     reason,
     state: {
-      reinjection,
-      selectedTargetId:
-        event === "target-missing" || event === "detached" ? undefined : state.selectedTargetId,
-      nextAttemptAtMs: nowMs + reinjection.nextDelayMs,
+      failedAttempts,
+      selectedTargetId,
+      nextAttemptAtMs: nowMs + nextDelayMs,
     },
   };
 }

@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { parseArgs } from "node:util";
 import { evaluateJavascript, probeCdp } from "../src/cdp.js";
 import { buildRuntimeDiagnosticsRead, buildRuntimeInjection } from "../src/injection.js";
 import { makeCdpReinjectionDeps, watchReinjectionLoop } from "../src/reinjection-loop.js";
@@ -116,56 +117,42 @@ async function findTarget(options: CliOptions) {
   return target;
 }
 
-type CliOptions = {
-  awaitPromise: boolean;
-  entrypoint?: string;
-  exactTitle?: string;
-  expression?: string;
-  out?: string;
-  port: number;
-  pollIntervalMs: number;
-  targetId?: string;
-  timeoutMs: number;
-  version?: string;
-};
+type CliOptions = ReturnType<typeof parseOptions>;
 
-function parseOptions(argsList: string[]): CliOptions {
-  const options: CliOptions = {
-    awaitPromise: true,
-    port: 8080,
-    pollIntervalMs: 5000,
-    timeoutMs: 5000,
-  };
+function parseOptions(argsList: string[]) {
+  const { values } = parseArgs({
+    args: argsList,
+    options: {
+      entrypoint: { type: "string" },
+      "exact-title": { type: "string" },
+      expression: { type: "string" },
+      "no-await-promise": { type: "boolean" },
+      out: { type: "string" },
+      "poll-interval-ms": { type: "string" },
+      port: { type: "string" },
+      "target-id": { type: "string" },
+      "timeout-ms": { type: "string" },
+      version: { type: "string" },
+    },
+  });
+  const pollIntervalMs = Number(values["poll-interval-ms"] ?? 5000);
 
-  for (let index = 0; index < argsList.length; index += 1) {
-    const arg = argsList[index];
-    const next = argsList[index + 1];
-    if (arg === "--no-await-promise") {
-      options.awaitPromise = false;
-      continue;
-    }
-    if (!arg.startsWith("--")) continue;
-    if (!next) throw new Error(`Missing value for ${arg}`);
-
-    if (arg === "--port") options.port = Number(next);
-    else if (arg === "--poll-interval-ms") options.pollIntervalMs = Number(next);
-    else if (arg === "--timeout-ms") options.timeoutMs = Number(next);
-    else if (arg === "--out") options.out = next;
-    else if (arg === "--target-id") options.targetId = next;
-    else if (arg === "--exact-title") options.exactTitle = next;
-    else if (arg === "--expression") options.expression = next;
-    else if (arg === "--entrypoint") options.entrypoint = next;
-    else if (arg === "--version") options.version = next;
-    else throw new Error(`Unknown option ${arg}`);
-
-    index += 1;
-  }
-
-  if (!Number.isFinite(options.pollIntervalMs) || options.pollIntervalMs < 1000) {
+  if (!Number.isFinite(pollIntervalMs) || pollIntervalMs < 1000) {
     throw new Error("--poll-interval-ms must be a finite number >= 1000");
   }
 
-  return options;
+  return {
+    awaitPromise: values["no-await-promise"] !== true,
+    entrypoint: values.entrypoint,
+    exactTitle: values["exact-title"],
+    expression: values.expression,
+    out: values.out,
+    pollIntervalMs,
+    port: Number(values.port ?? 8080),
+    targetId: values["target-id"],
+    timeoutMs: Number(values["timeout-ms"] ?? 5000),
+    version: values.version,
+  };
 }
 
 async function writeJson(filePath: string, data: unknown): Promise<void> {

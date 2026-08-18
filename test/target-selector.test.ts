@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { buildRuntimeInjection } from "../src/injection.js";
-import { transitionReinjection } from "../src/reinjection.js";
 import { rankSharedContextTargets, selectSharedContextTarget } from "../src/target-selector.js";
 
 test("selects exact SharedJSContext before fallback-looking targets", () => {
@@ -32,7 +31,7 @@ test("selects SharedJSContext from a sanitized real Steam target fixture", async
   assert.equal(selectSharedContextTarget(targets)?.target.title, "SharedJSContext");
 });
 
-test("supports configured desktop target heuristics", () => {
+test("supports configured exact target titles", () => {
   const ranked = rankSharedContextTargets(
     [
       {
@@ -42,7 +41,7 @@ test("supports configured desktop target heuristics", () => {
         webSocketDebuggerUrl: "ws://three",
       },
     ],
-    { exactTitles: ["Steam Client Service"], urlIncludes: ["desktop"] },
+    { exactTitles: ["Steam Client Service"] },
   );
 
   assert.equal(ranked[0]?.target.id, "3");
@@ -100,29 +99,4 @@ test("runtime injection uses structured versioned marker", () => {
   assert.match(script, /version/);
   assert.match(script, /injectedAt/);
   assert.match(script, /already-loaded/);
-});
-
-test("reinjection backs off after repeated missing targets", () => {
-  const first = transitionReinjection(
-    { attempts: 0, nextDelayMs: 1000, status: "idle" },
-    "target-missing",
-    { baseDelayMs: 1000, maxDelayMs: 5000 },
-  );
-  const second = transitionReinjection(first, "target-missing", {
-    baseDelayMs: 1000,
-    maxDelayMs: 5000,
-  });
-  const third = transitionReinjection(second, "target-missing", {
-    baseDelayMs: 1000,
-    maxDelayMs: 5000,
-  });
-  const fourth = transitionReinjection(third, "target-missing", {
-    baseDelayMs: 1000,
-    maxDelayMs: 5000,
-  });
-
-  assert.equal(first.nextDelayMs, 1000);
-  assert.equal(second.nextDelayMs, 2000);
-  assert.equal(third.nextDelayMs, 4000);
-  assert.equal(fourth.nextDelayMs, 5000);
 });

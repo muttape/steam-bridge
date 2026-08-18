@@ -28,6 +28,24 @@ test("reinjection loop waits with backoff when target is missing", async () => {
   assert.equal(result.state.selectedTargetId, undefined);
 });
 
+test("reinjection loop caps repeated failure backoff", async () => {
+  let state = initialReinjectionLoopState();
+  const delays: number[] = [];
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const nowMs = state.nextAttemptAtMs;
+    const result = await runReinjectionTick(deps({ targets: [] }), state, {
+      ...options({ nowMs }),
+      baseDelayMs: 1,
+      maxDelayMs: 5,
+    });
+    delays.push(result.state.nextAttemptAtMs - nowMs);
+    state = result.state;
+  }
+
+  assert.deepEqual(delays, [1, 2, 4, 5]);
+});
+
 test("reinjection loop injects when target appears", async () => {
   let injects = 0;
   const result = await runReinjectionTick(

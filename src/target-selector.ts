@@ -3,7 +3,6 @@ import type { CdpTarget } from "./cdp.js";
 export type TargetSelectorConfig = {
   exactTitles?: string[];
   titleIncludes?: string[];
-  urlIncludes?: string[];
 };
 
 export type TargetCandidate = {
@@ -15,7 +14,6 @@ export type TargetCandidate = {
 const DEFAULT_CONFIG: Required<TargetSelectorConfig> = {
   exactTitles: ["SharedJSContext"],
   titleIncludes: ["SharedJSContext", "Shared Context"],
-  urlIncludes: [],
 };
 
 export function rankSharedContextTargets(
@@ -25,7 +23,6 @@ export function rankSharedContextTargets(
   const resolved = {
     exactTitles: config.exactTitles ?? DEFAULT_CONFIG.exactTitles,
     titleIncludes: config.titleIncludes ?? DEFAULT_CONFIG.titleIncludes,
-    urlIncludes: config.urlIncludes ?? DEFAULT_CONFIG.urlIncludes,
   };
 
   return targets
@@ -55,13 +52,6 @@ function scoreTarget(target: CdpTarget, config: Required<TargetSelectorConfig>):
     if (target.title.includes(fragment)) {
       score += 25;
       reasons.push(`title includes ${fragment}`);
-    }
-  }
-
-  for (const fragment of config.urlIncludes) {
-    if (target.url.includes(fragment)) {
-      score += 10;
-      reasons.push(`url includes ${fragment}`);
     }
   }
 

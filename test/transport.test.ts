@@ -49,7 +49,6 @@ test("protocol rejects unsupported version and invalid message shapes", () => {
 
 test("transport call returns reply", async () => {
   const server = await startTransportServer({
-    port: 0,
     routes: new Map([["system.ping", () => "pong"]]),
   });
   try {
@@ -66,7 +65,6 @@ test("transport call returns reply", async () => {
 
 test("transport missing route rejects with route_not_found", async () => {
   const server = await startTransportServer({
-    port: 0,
     routes: new Map([["system.ping", () => "pong"]]),
   });
   try {
@@ -81,7 +79,7 @@ test("transport missing route rejects with route_not_found", async () => {
 });
 
 test("transport emits events with args", async () => {
-  const server = await startTransportServer({ port: 0 });
+  const server = await startTransportServer();
   try {
     const client = await TransportClient.connect(wsUrl(server));
     const event = new Promise<unknown[]>((resolve) =>
@@ -98,7 +96,7 @@ test("transport emits events with args", async () => {
 });
 
 test("transport rejects missing or wrong token", async () => {
-  const server = await startTransportServer({ port: 0 });
+  const server = await startTransportServer();
   try {
     await assert.rejects(connectRaw(`ws://127.0.0.1:${server.port}/ws`));
     await assert.rejects(connectRaw(`ws://127.0.0.1:${server.port}/ws?token=wrong`));
@@ -107,12 +105,8 @@ test("transport rejects missing or wrong token", async () => {
   }
 });
 
-test("transport rejects non-loopback host", async () => {
-  await assert.rejects(startTransportServer({ host: "0.0.0.0", port: 0 }), /127\.0\.0\.1/);
-});
-
 test("transport rejects oversized messages", async () => {
-  const server = await startTransportServer({ port: 0 });
+  const server = await startTransportServer();
   try {
     const socket = await connectRaw(wsUrl(server));
     const close = new Promise<void>((resolve) => socket.once("close", () => resolve()));
@@ -128,7 +122,6 @@ test("transport rejects oversized messages", async () => {
 
 test("server returns invalid_message for malformed call", async () => {
   const server = await startTransportServer({
-    port: 0,
     routes: new Map([["system.ping", () => "pong"]]),
   });
   try {
@@ -153,7 +146,6 @@ test("server returns invalid_message for malformed call", async () => {
 
 test("server returns handler_error without stack for thrown route", async () => {
   const server = await startTransportServer({
-    port: 0,
     routes: new Map([
       [
         "broken.route",
@@ -185,7 +177,6 @@ test("server returns handler_error without stack for thrown route", async () => 
 
 test("client rejects pending calls when socket closes", async () => {
   const server = await startTransportServer({
-    port: 0,
     routes: new Map([["system.ping", () => "pong"]]),
   });
   try {
@@ -217,7 +208,6 @@ test("client rejects call when socket send fails", async () => {
 
 test("transport server close closes clients and pending calls", async () => {
   const server = await startTransportServer({
-    port: 0,
     routes: new Map([["slow.route", () => new Promise(() => {})]]),
   });
   const socket = await connectRaw(wsUrl(server));

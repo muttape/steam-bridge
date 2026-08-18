@@ -20,22 +20,15 @@ export type TransportServer = {
 };
 
 export type TransportServerOptions = {
-  host?: string;
-  port?: number;
   routes?: Map<string, TransportRoute>;
-  token?: string;
   onRequest?: (request: IncomingMessage, response: ServerResponse) => boolean;
 };
 
 export async function startTransportServer(
   options: TransportServerOptions = {},
 ): Promise<TransportServer> {
-  const host = options.host ?? "127.0.0.1";
-  if (host !== "127.0.0.1") {
-    throw new Error("Transport server must bind to 127.0.0.1");
-  }
-
-  const token = options.token ?? randomBytes(32).toString("base64url");
+  const host = "127.0.0.1";
+  const token = randomBytes(32).toString("base64url");
   const routes = options.routes ?? new Map<string, TransportRoute>();
   const clients = new Set<WebSocket>();
   const webSocketServer = new WebSocketServer({
@@ -68,7 +61,7 @@ export async function startTransportServer(
     });
   });
 
-  const port = await listen(httpServer, host, options.port ?? 0);
+  const port = await listen(httpServer, host, 0);
   return {
     port,
     token,
@@ -80,7 +73,7 @@ export async function startTransportServer(
     async close() {
       for (const client of clients) client.close();
       await closeWebSocketServer(webSocketServer);
-      await closeHttpServer(httpServer);
+      await httpServer[Symbol.asyncDispose]();
     },
   };
 }
@@ -135,12 +128,6 @@ function listen(server: Server, host: string, port: number): Promise<number> {
 }
 
 function closeWebSocketServer(server: WebSocketServer): Promise<void> {
-  return new Promise((resolve, reject) => {
-    server.close((error) => (error ? reject(error) : resolve()));
-  });
-}
-
-function closeHttpServer(server: Server): Promise<void> {
   return new Promise((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
   });

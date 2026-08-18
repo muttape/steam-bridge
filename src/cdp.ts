@@ -103,17 +103,11 @@ export async function evaluateJavascript(
 }
 
 async function getJson<T>(url: string, timeoutMs: number): Promise<T> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`);
-    }
-    return (await response.json()) as T;
-  } finally {
-    clearTimeout(timeout);
+  const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+  if (!response.ok) {
+    throw new Error(`${response.status} ${response.statusText}`);
   }
+  return (await response.json()) as T;
 }
 
 function sendCdpCommand(
@@ -123,14 +117,12 @@ function sendCdpCommand(
 ): Promise<CdpResponse> {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(webSocketDebuggerUrl);
-    const pending = new Map<number, (response: CdpResponse) => void>();
     const id = 1;
     let isSettled = false;
     const settle = (action: () => void) => {
       if (isSettled) return;
       isSettled = true;
       clearTimeout(timeout);
-      pending.clear();
       action();
       closeSocket(socket);
     };
@@ -138,7 +130,13 @@ function sendCdpCommand(
       settle(() => reject(new CdpCommandError(`CDP command timed out after ${timeoutMs}ms`)));
     }, timeoutMs);
 
-    pending.set(id, (response) => {
+    socket.addEventListener("open", () => {
+      socket.send(JSON.stringify({ id, ...command }));
+    });
+
+    socket.addEventListener("message", (event) => {
+      const response = parseSocketMessage(event.data);
+      if (response?.id !== id) return;
       const error = response.error;
       if (error) {
         settle(() => reject(new CdpCommandError(error.message ?? "CDP command failed", error)));
@@ -147,23 +145,12 @@ function sendCdpCommand(
       }
     });
 
-    socket.addEventListener("open", () => {
-      socket.send(JSON.stringify({ id, ...command }));
-    });
-
-    socket.addEventListener("message", (event) => {
-      const response = parseSocketMessage(event.data);
-      if (response?.id === undefined) return;
-      pending.get(response.id)?.(response);
-      pending.delete(response.id);
-    });
-
     socket.addEventListener("error", (event) => {
       settle(() => reject(new CdpCommandError("CDP socket error", event)));
     });
 
     socket.addEventListener("close", () => {
-      if (isSettled || pending.size === 0) return;
+      if (isSettled) return;
       settle(() => reject(new CdpCommandError("CDP socket closed before response")));
     });
   });

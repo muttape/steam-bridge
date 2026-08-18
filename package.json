@@ -37,7 +37,6 @@
     "steam-cef": "node dist/scripts/steam-cef.js",
     "smoke:steam": "npm run build && node dist/scripts/smoke-steam.js",
     "prepare": "npm run build",
-    "start": "npm run build",
     "test": "npm run build && node --test \"dist/test/*.test.js\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "release": "release-it"
