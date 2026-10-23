@@ -25,10 +25,10 @@
     }
   },
   "engines": {
-    "node": ">=24.0.0 <25"
+    "node": ">=24.22.1 <25"
   },
   "volta": {
-    "node": "24.18.0"
+    "node": "24.22.1"
   },
   "scripts": {
     "format": "prettier --write . --log-level error",

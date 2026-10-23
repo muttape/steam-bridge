@@ -3,7 +3,7 @@
 Standalone TypeScript/Node primitives for Steam desktop CEF/CDP discovery, injection, reinjection,
 authenticated loopback transport, and Steam Library app mounting.
 
-Requires Node 24.
+Requires Node 24.22.1 or later in the 24.x line.
 
 ## Public entrypoints
 
