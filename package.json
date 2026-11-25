@@ -25,10 +25,10 @@
     }
   },
   "engines": {
-    "node": ">=24.22.1 <25"
+    "node": ">=26.13.1 <27"
   },
   "volta": {
-    "node": "24.22.1"
+    "node": "26.13.1"
   },
   "scripts": {
     "format": "prettier --write . --log-level error",
@@ -45,7 +45,7 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.6.10",
     "@types/ws": "^8.18.1",
     "esbuild": "^0.28.1",
     "prettier": "^3.9.6",
